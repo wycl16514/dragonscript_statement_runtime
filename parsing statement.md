@@ -9,8 +9,11 @@ print("hello world!");
 First we need to enhance our grammar rules to let the parser understand the print state, and we change our grammar rules as following:
 
 Program -> statement statement_recursive
+
 statement -> expression SEMICOLON | print_statement
+
 statement_recursive -> EOF | statement
+
 print_statement -> PRINT LEFT_PAREN expression RIGHT_PAREN SEMICOLON
 
 The above grammar enable the parser to do following things:

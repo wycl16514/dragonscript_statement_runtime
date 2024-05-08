@@ -131,6 +131,89 @@ and make the following code changes:
     }
 ```
 In the above code, we change the beginning of the parsing from statement to program, and in parsing the statement we need to consider two cases now, one is for the print statement , the second is for
-arithmetic expression, that's why when we enter into the state of statement, we need to check which way should we take, go to parse the print statment or go to parse the arithmetic 
+arithmetic expression, that's why when we enter into the state of statement, we need to check which way should we take, go to parse the print statment or go to parse the arithmetic. In printStmt we do
+the parsing according to the rule print_stmt -> PRINT LEFT_PAREN expression RIGHT_PAREN SEMICOLON, first check it should begin with left paren, then parsing the expression inside it and make sure it ends
+with right paren and semicolon.
+
+Since we have added new nodes, then we need to add the handling for new nodes in addAcceptForNode like following:
+```js
+ addAcceptForNode = (parent, node) => {
+        switch (node.name) {
+            case "root":
+                node.accept = (visitor) => {
+                    visitor.visitRootNode(parent, node)
+                }
+                break
+            //add visit method for program and statement recursive
+            case "program":
+                node.accept = (visitor) => {
+                    visitor.visitProgramNode(parent, node)
+                }
+                break
+            case "statement_recursive":
+                node.accept = (visitor) => {
+                    visitor.visitStatementRecursiveNode(parent, node)
+                }
+                break
+            case "statement":
+                node.accept = (visitor) => {
+                    visitor.visitStatementNode(parent, node)
+                }
+                break
+            case "print_stmt":
+                node.accept = (visitor) => {
+                    visitor.visitPrintStatementNode(parent, node)
+                }
+                break
+    ....
+}
+```
+Since the parsing tree has new nodes, we need to handle the new nodes in tree_adjust_visitor and inpteprer, we don't need to do any adjustment for the newly added nodes, therefore we have the following code
+for tree adjust vistor:
+```js
+   visitProgramNode = (parent, node) => {
+        this.visitChildren(node)
+    }
+
+    visitStatementRecursiveNode = (parent, node) => {
+        this.visitChildren(node)
+    }
+
+    visitPrintStatementNode = (parent, node) => {
+        this.visitChildren(node)
+    }
+```
+
+But we need to the the evaluation for the print_stmt node in intepreter, and we add code like following:
+```js
+ visitProgramNode = (parent, node) => {
+        this.visitChildren(node)
+        this.attachEvalResult(parent, node)
+    }
+
+    visitStatementRecursiveNode = (parent, node) => {
+        this.visitChildren(node)
+        this.attachEvalResult(parent, node)
+    }
+
+ visitPrintStatementNode = (parent, node) => {
+        this.visitChildren(node)
+        const exprEval = node.children[0].evalRes
+        node.evalRes = {
+            type: "print",
+            value: exprEval.value,
+        }
+        this.attachEvalResult(parent, node)
+    }
+```
+When visit the print_stmt node in the parsing tree, we first evaluate its child node that is expression node, then we get the evaluation result and put the result value in the evalRes object for the print_stmt
+node here then passing it up to its parent until the root node. After completing above code, let's check the parsing tree for statement of  print(1+2*3+4) :
 
 
+<img width="1364" alt="截屏2024-05-08 14 42 50" src="https://github.com/wycl16514/dragonscript_statement_runtime/assets/7506958/ff61c7fa-2b79-4c0b-87af-6ed26c823e02">
+
+The parsing tree looks good, and there is an expression node as child of the print_stmt node, then let's run the test again and make sure it can be passed:
+
+<img width="1072" alt="截屏2024-05-08 14 44 58" src="https://github.com/wycl16514/dragonscript_statement_runtime/assets/7506958/62563a94-ee1f-4ecd-b596-7170a7904998">
+
+So far so good, we will see how to improve the evaluation of statements in next section.

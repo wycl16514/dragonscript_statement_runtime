@@ -61,6 +61,18 @@ it("should evaluate a print statement", () => {
 Run the test and make sure it fail, then we add code to satisfy the test. we need to change our parser to reflect the changes of the above grammar rule, go to recursive_descent_parser.js
 and make the following code changes:
 ```js
+ advance = () => {
+        if (this.current + 1 >= this.tokens.length) {
+            /*
+            if current at the end of array, we push a new token
+            otherwise there has token ahead of current ,then we just 
+            return the next already existing token
+            */
+            const token = this.scanner.scan()
+            //we need to read the EOF token to know it is the end of source
+            this.tokens.push(token)
+            this.current += 1
+        }
  parse = () => {
         //clear the parsing tree
         const treeRoot = this.createParseTreeNode(null, "root")
@@ -194,9 +206,11 @@ But we need to the the evaluation for the print_stmt node in intepreter, and we 
         this.attachEvalResult(parent, node)
     }
 
-    visitStatementRecursiveNode = (parent, node) => {
+     visitStatementRecursiveNode = (parent, node) => {
         this.visitChildren(node)
-        this.attachEvalResult(parent, node)
+        if (node.evalRes) {
+            this.attachEvalResult(parent, node)
+        }
     }
 
  visitPrintStatementNode = (parent, node) => {
@@ -212,8 +226,8 @@ But we need to the the evaluation for the print_stmt node in intepreter, and we 
 When visit the print_stmt node in the parsing tree, we first evaluate its child node that is expression node, then we get the evaluation result and put the result value in the evalRes object for the print_stmt
 node here then passing it up to its parent until the root node. After completing above code, let's check the parsing tree for statement of  print(1+2*3+4) :
 
+![截屏2024-05-08 18 26 34](https://github.com/wycl16514/dragonscript_statement_runtime/assets/7506958/fb0bae7e-f796-48c6-8d2a-6b63a13906a2)
 
-<img width="1364" alt="截屏2024-05-08 14 42 50" src="https://github.com/wycl16514/dragonscript_statement_runtime/assets/7506958/ff61c7fa-2b79-4c0b-87af-6ed26c823e02">
 
 The parsing tree looks good, and there is an expression node as child of the print_stmt node, then let's run the test again and make sure it can be passed:
 

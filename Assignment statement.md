@@ -8,7 +8,27 @@ export default class Scanner {
     ...
 }
 ```
-change the value for identifier from 14 to 24.
+change the value for identifier from 14 to 24. and in parser:
+```
+ advance = () => {
+        if (this.current + 1 >= this.tokens.length) {
+            /*
+            if current at the end of array, we push a new token
+            otherwise there has token ahead of current ,then we just 
+            return the next already existing token
+            */
+            const token = this.scanner.scan()
+            //we need to read the EOF token to know it is the end of source
+            this.tokens.push(token)
+            this.current += 1
+        }
+        //bug fix
+        else {
+            //don't need to read new token
+            this.current += 1
+        }
+    }
+```
 
 In last section, we support assigment in the declaration of variable. But we can't support the reassignment, for example our parser can't support a statement like a = 234; without the var keyword, enven the given variable has alread declared before. Let's enhance our parser to enable variable assigment like the way indicated in the following test case:
 
@@ -122,8 +142,56 @@ it("should throw exception for assignment to r value", () => {
     })
 ```
 Run the test case above and make sure it fail, when we parsing statement for assignment, we need to make sure the object at the left of 
-equal sign should be an identifier that is already defined, therefore we change the code like following:
+equal sign should be an identifier , therefore we change the code like following:
 ```js
+ assignment = (parentNode) => {
+        //assignment -> assign_to
+        if (this.matchTokens([Scanner.EQUAL])) {
+            //assign_to -> EQUAL expression
+            this.previous()
+            const token = this.matchTokens([Scanner.IDENTIFIER])
+            if (token) {
+                let assignmentNode = this.createParseTreeNode(parentNode, "assignment")
+                assignmentNode.attributes = {
+                    value: token.lexeme
+                }
+                //over the identifier
+                this.advance()
+                //over the equal sign
+                this.advance()
+                const curToken = this.getToken()
+                console.log(curToken)
+                this.expression(assignmentNode)
+                parentNode.children.push(assignmentNode)
+            } else {
+                throw new Error("can only assign to defined identifier")
+            }
+        } else {
+            //assign_to -> EPSILON
+            return
+        }
+    }
+```
+In the above code, when the parser parsing an assginment statement, it will check the token at the left of the equal sign should be an identifier, if it is not,
+it throw out an parsing error exeception, Let's run the test again and make sure the newly added test case can be passed.
+
+Our code still not perfect, because we still can assign to an identifer that is not defined, for example the following test case will fail:
+```js
+ it("should throw exception when assign to undefined variable", () => {
+        let code = `
+         a = 1234;
+     `
+        let codeToParse = () => {
+            createParsingTree(code)
+        }
+        expect(codeToParse).toThrow()
+    })
+})
+```
+Such case can't be handled by parser because we can only check variable defined or not at runtime, therefore its the job of identifier, let's do something on the
+identifier:
+```js
+
 ```
 
 

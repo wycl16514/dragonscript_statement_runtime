@@ -93,5 +93,17 @@ Actually we don't need to do anything and the test case above can passed automat
         expect(console[0]).toEqual("3hello")
         expect(console[1]).toEqual("hellohellohello")
     })
+
+ it("should throw exception when assign to undefined variable", () => {
+        let code = `
+         a = 1234;
+     `
+        let codeToParse = () => {
+            createParsingTree(code)
+            let intepreter = new Intepreter()
+            root.accept(intepreter)
+        }
+        expect(codeToParse).toThrow()
+    })
 ```
 It turns out cases at aboved can passed too, which shows the robust of our evaluator and parser!

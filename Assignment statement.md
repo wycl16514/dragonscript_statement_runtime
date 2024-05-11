@@ -68,7 +68,8 @@ Let's check how to change the code in parser:
     }
 
     assignment = (parentNode) => {
-        //assignment -> assign_to
+        //assignment ->equality assign_to
+        this.equality(parentNode)
         if (this.matchTokens([Scanner.EQUAL])) {
             //over the equal sign
             this.advance()
@@ -145,7 +146,8 @@ Run the test case above and make sure it fail, when we parsing statement for ass
 equal sign should be an identifier , therefore we change the code like following:
 ```js
  assignment = (parentNode) => {
-        //assignment -> assign_to
+        //assignment ->equality assign_to
+        this.equality(parentNode)
         if (this.matchTokens([Scanner.EQUAL])) {
             //assign_to -> EQUAL expression
             this.previous()

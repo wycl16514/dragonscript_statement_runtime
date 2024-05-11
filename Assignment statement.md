@@ -96,6 +96,14 @@ Let's check how to change the code in parser:
  }
 
 ```
+Since we add a new node in the parser, we need to add visit method to tree adjustment visitor like following:
+
+```js
+ visitAssignmentNode = (parent, node) => {
+        this.visitChildren(node)
+    }
+```
+
 After completing the above code, let's draw the parsing tree for code with variable assignment by using the following command:
 
 recursiveparsetree var a=1; print(a); a=2;

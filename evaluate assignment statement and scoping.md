@@ -107,3 +107,40 @@ Actually we don't need to do anything and the test case above can passed automat
     })
 ```
 It turns out cases at aboved can passed too, which shows the robust of our evaluator and parser!
+
+Variables have scope, for example for the following code, we defined two variable with the same name but they can bind to different value:
+```js
+{
+var a = "hello";
+print(a); //"hello"
+}
+
+{
+var a = "world";
+print(a); //"world"
+}
+```
+Most language support variables nesting and shadowing, for example :
+```js
+var a = 1;
+print(a); // 1
+{
+    var a = 2;
+    print(a); //2
+}
+print(a) //1 again
+```
+
+we may make it a little be complcated, like js, var used to define global variable, and let used to defined local variable like following:
+```js
+print(a);// error, undefined
+{
+    var a = 1;
+    let b = 2;
+}
+print(a); //ok
+print(b); //undefined
+```
+In order to achive above variable scoping,we can use the globalEnv for binding variable defined by using var, and we need some ways to accommodate the scoping for variables defined
+by let keyword.
+

@@ -504,9 +504,10 @@ getVariable = (name) => {
         throw new Error(`undefined variable with name ${name}`)
     }
 ```
-Notice the above code, when we referencing variable in a block, it it can't find its declaration, the intepreter will look up to outer scope for it, if it looks all
-enviroment created until the current scope and can't find the declaration of variable, the intepreter throw an exception for it, run the test again and make sure
-it success.
+
+Notice the above code, when we referencing variable in a block, it it can't find its declaration, the intepreter will look up to outer scope for it, if it looks all enviroment created until the current scope and can't find the declaration of variable, the intepreter throw an exception for it, run the test again and make sure it success.
+
+
 
 
 

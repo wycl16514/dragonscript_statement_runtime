@@ -141,6 +141,60 @@ print(a);// error, undefined
 print(a); //ok
 print(b); //undefined
 ```
-In order to achive above variable scoping,we can use the globalEnv for binding variable defined by using var, and we need some ways to accommodate the scoping for variables defined
-by let keyword.
+In order to achive above variable scoping,we can use the globalEnv for binding variable defined by using var, and we need some ways to accommodate the scoping for variables defined by let keyword. Because varaible defined by keyword let has local scoping, which means we can't put it in globalEnv, we need to create local 
+enviroment for it, at the same time, we need to pay attention to the situation of nesting scope like following:
+```js
+{
+   let a = 1;
+   {
+       let b = 2;
+       {
+           let c = 3;
+           print(a);// it is ok
+       }
+       print(c); //error
+   }
+}
+```
+we can see from above code, for the deepest scope where variable c is in, we can reference variable defined at the outer scope, how can we handle this by using
+local enviroment? The solution is we need to define the local enviroment in a way of stack like following:
+
+localEnv:[{a: 1}, {b:2}, {c:3} ]
+
+The deepest scope conrresponding to the enviroment object at the top of stack, when referencing variable in current scope, we begin searching the variable in 
+enviroment stack at the top of localEvn stack, if we can't find the given variable, then we go to search it from the enviroment object at lower level, if we
+still can't find it, we go down the layer until the bottom of localEnv stack, if we still can't find the given variable, we search it at global enviroment,
+if we fail to find the variable in global enviroment, then we can be sure we are referencing an undefined varialbe.
+
+We will handle the scoping problem case by case, let's define the grammar for statement scoping first, as you have seen above, we use braces { and } to define
+the beginning and ending of a statment scope, then we can use the following grammar rules to define a statement scope:
+
+statement -> expression | print_stmt | block
+block -> LEFT_BRACE declaration_recursive LEFT_BRACE
+
+Let's add a test case for parsing statement block first:
+```js
+it("should enable parsing statement block", ()=> {
+        let code = `
+            {
+                var a = 1;
+                {
+                    var b = 2;
+                }
+            }
+
+            {
+                var c = 3;
+            }
+        `
+        let root = createParsingTree(code)
+        expect(root).not.toBeNull()
+    })
+```
+Run the case and make sure it fail, then we add code in parser to make it passes as following:
+```js
+
+```
+
+
 

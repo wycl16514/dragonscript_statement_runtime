@@ -193,8 +193,59 @@ it("should enable parsing statement block", ()=> {
 ```
 Run the case and make sure it fail, then we add code in parser to make it passes as following:
 ```js
+statement = (parent) => {
+   ...
+     //statement -> block
+        //block -> LEFT_BRACE declaration_recursive RIGHT_BRACE
+        token = this.matchTokens([Scanner.LEFT_BRACE])
+        if (token) {
+            parent.children.push(stmtNode)
+            //over the left brace
+            this.advance()
+            this.block(stmtNode)
+            if (!this.matchTokens([Scanner.RIGHT_BRACE])) {
+                throw new Error("Missing right brace for block")
+            }
+            //over the right brace
+            this.advance()
+            return
+        }
+    ....
+}
 
+ block = (parent) => {
+        const blockNode = this.createParseTreeNode(parent, "block")
+        parent.children.push(blockNode)
+        this.declarationRecursive(blockNode)
+    }
+
+ declarationRecursive = (parent) => {
+        //stop parsing when we see the right brace which means its end of a block
+        if (this.matchTokens([Scanner.RIGHT_BRACE])) {
+            //return on end of block
+            return
+        }
+        ....
+    }
+addAcceptForNode = (parent, node) => {
+    switch (node.name) {
+    ....
+      case "block":
+                node.accept = (visitor) => {
+                    visitor.visitBlockNode(parent, node)
+                }
+                break
+    ....
+}
 ```
+Then we need to add visit method in tree adjustment visitor:
+```js
+ visitBlockNode = (parent, node) => {
+        this.visitChildren(node)
+    }
+```
+After adding the above code, run test again and make sure the newly added test case can be passed.
+
 
 
 

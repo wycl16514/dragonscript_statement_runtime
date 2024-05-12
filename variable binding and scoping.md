@@ -91,5 +91,4 @@ visitPrimaryNode = (parent, node) => {
 In visitVarDeclarationNode, if there is assigment in the declaration of variable, then we can evaluate the result of the expression at the right of the equal symbol, if there is not assigment in the variable 
 declaration, then the evaluated result should be undefined, then we can create a NIL value for the variable, then we call bindGlobalVariable to bind the assign value with the given variable name.
 
-In VisistPrimaryNode, if the token for the given node is IDENTIFER, which means its referencing the value of a variable, then we can get the value of the given variable with its name and return to parent nodes.
-Run the code above and make sure the test case can be passed.
+In VisistPrimaryNode, if the token for the given node is IDENTIFER, which means its referencing the value of a variable, then we can get the value of the given variable with its name and return to parent nodes. Run the code above and make sure the test case can be passed.

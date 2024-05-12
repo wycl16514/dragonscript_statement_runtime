@@ -309,7 +309,204 @@ varDecl = (parent) => {
         ...
 }
 ```
-In above code, when in declarationRecursive, we keep the declaration key word and we can check the varaible is declared by var or let at the run time.
+In above code, when in declarationRecursive, we keep the declaration key word and we can check the varaible is declared by var or let at the run time. In next step,
+we goto runtime for adding new code:
+```js
+export default class RunTime {
+    constructor() {
+        //console its a string buffer to receive output from print
+        this.console = []
+        /*
+        golbalEnv used to record the bindings for global variables
+        */
+        this.globalEnv = {}
+
+        /*
+        if variables that are declared by let in the out most , then 
+        it should put into global envivroment
+        */
+        this.localEnv = [this.globalEnv]
+    }
+
+ addLocalEnv = () => {
+        this.localEnv.push({})
+    }
+
+    bindLocalVariable = (name, value) => {
+        const env = this.localEnv[this.localEnv.length - 1]
+        env[name] = value
+    }
+
+    getVariable = (name) => {
+        /*
+        search the given variable in localEnv array
+        */
+        for (let i = this.localEnv.length - 1; i >= 0; i--) {
+            if (this.localEnv[i][name]) {
+                return this.localEnv[i][name]
+            }
+        }
+
+        return null
+    }
+
+
+    removeLocalEnv = () => {
+        if (this.localEnv.length > 1) {
+            this.localEnv.pop()
+        }
+    }
+
+```
+
+Every time when intepreter found a block node, it will call add addLocalEnv to create a local enviroment object on the array of localEnv, when it comes out from
+the block node, which meas the code to goto the end of block, then intepreter calls removeLocalEnv to remove the enviroment object, then any variables that are 
+binding in the current block will be removed.
+
+Notices in the constructor, we put globalEnv as the first element of localEnv, this means any variable declared by let at the out most will deem as global variables.
+Now we can goto intepreter.js to add handling code:
+```js
+ visitBlockNode = (parent, node) => {
+        /*
+        in block statement, create local enviroment to store variables
+        declared by let
+        */
+        this.runTime.addLocalEnv()
+        this.visitChildren(node)
+        this.attachEvalResult(parent, node)
+        //when out of the local block, remove current locan enviroment
+        this.runTime.removeLocalEnv()
+    }
+
+visitVarDeclarationNode = (parent, node) => {
+        this.visitChildren(node)
+        let assignedVal = node.evalRes
+        const variableName = node.attributes.value
+
+        if (assignedVal === undefined) {
+            //variable declaration without assignment, init its value to null
+            assignedVal = {
+                type: "NIL",
+                value: "null"
+            }
+        }
+
+        /*
+        if the variable is declared by let, should bind it to local enviroment
+        ,if it is declared by var, bind it to global enviroment
+        */
+        if (node.token.lexeme === "let") {
+            this.runTime.bindLocalVariable(variableName, assignedVal)
+        } else {
+            this.runTime.bindGlobalVariable(variableName, assignedVal)
+        }
+
+        this.attachEvalResult(parent, node)
+    }
+
+ visitPrimaryNode = (parent, node) => {
+    ....
+      switch (token.token) {
+            case Scanner.IDENTIFIER:
+                //get the binding value for given variable name
+                const name = token.lexeme
+                const val = this.runTime.getVariable(name)
+                type = val.type
+                value = val.value
+                break
+      ....
+      }
+ ...
+}
+```
+In intepreter, when it comes to block node, the method of visitBlockNode will be called, it calls addLocalEnv of runtime to create an enviroment object for the 
+current block, when it comes to the end of block(after calling this.visitChildren(node)), it calls this.runTime.removeLocalEnv() to remove the current enviroment
+object.
+
+After adding the above code, run the test again and make sure it passes. Actually we have done many thing at once, for example the following cases can be satified:
+```js
+it("should restrict local variable in their own scope", () => {
+        let code = `
+           {
+               let a = 1;
+               print(a);
+           }
+
+           {
+               let a = 2;
+               print(a);
+           }
+        `
+
+        let root = createParsingTree(code)
+        let intepreter = new Intepreter()
+        root.accept(intepreter)
+        const console = intepreter.runTime.console
+        expect(console.length).toEqual(2)
+        expect(console[0]).toEqual(1)
+        expect(console[1]).toEqual(2)
+    })
+
+    it("should reference variable in outer scope from inner scope", () => {
+        let code = `
+        {
+            let a = 1;
+            {
+                let b = 2;
+                {
+                    print(a);
+                    print(b);
+                }
+            }
+        }
+     `
+
+        let root = createParsingTree(code)
+        let intepreter = new Intepreter()
+        root.accept(intepreter)
+        const console = intepreter.runTime.console
+        expect(console.length).toEqual(2)
+        expect(console[0]).toEqual(1)
+        expect(console[1]).toEqual(2)
+    })
+```
+
+We need to make sure when referencing a local variable outsize of its declarting block should cause error, add the following test case:
+```js
+it("should throw exception for reference local variable when our of its scope", () => {
+        let code = `
+        {
+            let a = 1;
+        }
+        print(a);
+     `
+
+        const codeToParse = () => {
+            let root = createParsingTree(code)
+            let intepreter = new Intepreter()
+            root.accept(intepreter)
+        }
+        expect(codeToParse).toThrow("undefined variable with name a")
+    })
+```
+Run and it will fail, we goto runtime to add code for this case:
+```js
+getVariable = (name) => {
+        /*
+        search the given variable in localEnv array
+        */
+        for (let i = this.localEnv.length - 1; i >= 0; i--) {
+            if (this.localEnv[i][name]) {
+                return this.localEnv[i][name]
+            }
+        }
+        //report error for undefined variable
+        throw new Error(`undefined variable with name ${name}`)
+    }
+```
+Notice the above code, when we referencing variable in a block, it it can't find its declaration, the intepreter will look up to outer scope for it, if it looks all
+enviroment created until the current scope and can't find the declaration of variable, the intepreter throw an exception for it, run the test again and make sure
+it success.
 
 
 

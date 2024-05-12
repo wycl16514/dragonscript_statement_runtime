@@ -244,7 +244,72 @@ Then we need to add visit method in tree adjustment visitor:
         this.visitChildren(node)
     }
 ```
-After adding the above code, run test again and make sure the newly added test case can be passed.
+After adding the above code, run test again and make sure the newly added test case can be passed. Now we have block statement, then we can enable the declaration
+of local variable, like js, the keyword let will used to define variable with local scoping, let's see a test case:
+```js
+ it("variable declared by let should have local scoping", () => {
+        let code = `
+            var a = 1;
+            let b = 3;
+            {
+                let a = 2;
+                print(a);
+            }
+            print(a);
+            print(b);
+        `
+
+        let root = createParsingTree(code)
+        let intepreter = new Intepreter()
+        root.accept(intepreter)
+        const console = intepreter.runTime.console
+        expect(console.length).toEqual(3)
+        expect(console[0]).toEqual(2)
+        expect(console[1]).toEqual(1)
+        expect(console[2]).toEqual(3);
+    })
+```
+In above case, we defined two variables with the same name a, the first one is defined using var and it is a global variable, and the second a is defined
+in a block and when referencing it, we should get its value that is binding in the local not the value defined outside the local block, therefore the print(a)
+in the block should give value of 2 instead of 1.
+
+when the code leave the block, variable a return to the binding with the var declaration, then its value turns to 1 when execute the print statement outside the block,
+finally even the variable b is declared by using let, since it is not within any scope, we still see it as a global variable. Run the test and make sure the case fail.
+
+In order to satisy the case ,we first go to parser:
+
+```js
+
+```
+Then in intepreter, when it is visiting a block node, it generates a local enviroment, any variables declared by using let will bind in the local variable, when
+come out from the block element, the intepreter remove the local enviroment, therefore we add code to run time like following:
+```js
+ declarationRecursive = (parent) => {
+     ...
+      //if the current token is var, let  goto var_decl
+        token = this.matchTokens([Scanner.VAR, Scanner.LET])
+        if (token) {
+            //declaration_recursive -> var_decl  declaration_recursive
+            //save the keyword to VarDecl
+            this.varDecl(declNode)
+        } else {
+            //declaration_recursive -> statement declaration_recursive
+            this.statement(declNode)
+        }
+    ...
+}
+
+varDecl = (parent) => {
+        const varDeclNode = this.createParseTreeNode(parent, "var_decl")
+        parent.children.push(varDeclNode)
+        //attach the declaration keyword
+        varDeclNode.token = this.getToken()
+        //go over the declaration keyword
+        this.advance()
+        ...
+}
+```
+In above code, when in declarationRecursive, we keep the declaration key word and we can check the varaible is declared by var or let at the run time.
 
 
 

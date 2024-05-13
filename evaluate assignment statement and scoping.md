@@ -244,6 +244,7 @@ Then we need to add visit method in tree adjustment visitor:
         this.visitChildren(node)
     }
 ```
+
 After adding the above code, run test again and make sure the newly added test case can be passed. Now we have block statement, then we can enable the declaration
 of local variable, like js, the keyword let will used to define variable with local scoping, let's see a test case:
 ```js
@@ -279,12 +280,7 @@ finally even the variable b is declared by using let, since it is not within any
 In order to satisy the case ,we first go to parser:
 
 ```js
-
-```
-Then in intepreter, when it is visiting a block node, it generates a local enviroment, any variables declared by using let will bind in the local variable, when
-come out from the block element, the intepreter remove the local enviroment, therefore we add code to run time like following:
-```js
- declarationRecursive = (parent) => {
+declarationRecursive = (parent) => {
      ...
       //if the current token is var, let  goto var_decl
         token = this.matchTokens([Scanner.VAR, Scanner.LET])
@@ -309,8 +305,10 @@ varDecl = (parent) => {
         ...
 }
 ```
+
 In above code, when in declarationRecursive, we keep the declaration key word and we can check the varaible is declared by var or let at the run time. In next step,
 we goto runtime for adding new code:
+
 ```js
 export default class RunTime {
     constructor() {
@@ -358,13 +356,15 @@ export default class RunTime {
     }
 
 ```
+Notices in the constructor, we put globalEnv as the first element of localEnv, this means any variable declared by let at the out most will deem as global variables.
 
+Then in intepreter, when it is visiting a block node, it generates a local enviroment, any variables declared by using let will bind in the local variable, when
+come out from the block element, the intepreter remove the local enviroment, therefore we add code to run time like following:
+ 
 Every time when intepreter found a block node, it will call add addLocalEnv to create a local enviroment object on the array of localEnv, when it comes out from
 the block node, which meas the code to goto the end of block, then intepreter calls removeLocalEnv to remove the enviroment object, then any variables that are 
 binding in the current block will be removed.
 
-Notices in the constructor, we put globalEnv as the first element of localEnv, this means any variable declared by let at the out most will deem as global variables.
-Now we can goto intepreter.js to add handling code:
 ```js
  visitBlockNode = (parent, node) => {
         /*
